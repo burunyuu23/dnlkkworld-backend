@@ -1,0 +1,52 @@
+version: '3.9'
+services:
+
+  postgres_dnlkkworld:
+    image: postgres:14
+    restart: always
+    volumes:
+      - dnlkkworld:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRESQL_USER}
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASS}
+      POSTGRES_DB: ${POSTGRESQL_DB}
+    ports:
+      - ${POSTGRESQL_PORT}:5432
+  postgres_keycloak:
+    image: postgres:14
+    volumes:
+      - keycloak:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_KEYCLOAK_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_KEYCLOAK_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_KEYCLOAK_DB}
+    ports:
+      - ${POSTGRES_KEYCLOAK_PORT}:5432
+  keycloak:
+    image: quay.io/keycloak/keycloak
+    environment:
+      DB_VENDOR: POSTGRES
+      DB_ADDR: postgres_keycloak
+      DB_DATABASE: ${POSTGRES_KEYCLOAK_DB}
+      DB_USER: ${POSTGRES_KEYCLOAK_USER}
+      DB_SCHEMA: public
+      DB_PASSWORD: ${POSTGRES_KEYCLOAK_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      JAVA_OPTS: -Dkeycloak.profile=preview
+      KEYCLOAK_LOGLEVEL: DEBUG
+      ROOT_LOGLEVEL: DEBUG
+    command:
+      - start-dev
+    ports:
+      - ${KEYCLOAK_PORT}:8080
+      - 8282:8282
+    depends_on:
+      - postgres_keycloak
+
+
+volumes:
+  dnlkkworld:
+    name: dnlkkworld
+  keycloak:
+    name: keycloak

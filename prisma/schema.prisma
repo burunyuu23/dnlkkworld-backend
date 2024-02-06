@@ -1,0 +1,170 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["user", "questionnaire", "chat", "social"]
+}
+
+// user ----------------------------------------------------------------------
+
+enum Gender {
+  male
+  female
+
+  @@schema("user")
+}
+
+enum MaritalStatus {
+  married
+  divorced
+  was_not_married
+
+  @@schema("user")
+}
+
+model Country {
+  id         String @id @default(uuid()) @db.Uuid
+  shortValue String @map("short_value") @db.VarChar(2)
+  value      String @db.VarChar(64)
+  users      User[]
+
+  @@schema("user")
+}
+
+model User {
+  id              String          @id @db.Uuid
+  username        String
+  email           String?
+  age             Int?
+  imageUrl        String?         @map("image_url")
+  gender          Gender?         @map("gender_t")
+  maritalStatus   MaritalStatus?  @map("marital_status_t")
+  country         Country?        @relation(fields: [countryId], references: [id])
+  countryId       String?         @map("country") @db.Uuid
+  written         Questionnaire[] @relation("written")
+  answered        Questionnaire[] @relation("answered")
+  choices         Choice[]
+  sendMessages    Message[]       @relation("from")
+  receiveMessages Message[]       @relation("to")
+  rooms           Room[]
+  media           Media[]
+  comments        Comment[]
+  posts           Post[]
+
+  @@schema("user")
+}
+
+// questionnaire ----------------------------------------------------------------------
+
+model Questionnaire {
+  id            Int      @id @default(autoincrement())
+  name          String
+  question      String
+  multiple      Boolean? @default(false)
+  answered      User[]   @relation("answered")
+  answeredCount Int?     @default(0)
+  author        User     @relation("written", fields: [authorId], references: [id])
+  authorId      String   @map("author_id") @db.Uuid
+  options       Option[]
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@schema("questionnaire")
+}
+
+model Option {
+  id              String        @id @default(uuid()) @db.Uuid
+  text            String
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id])
+  questionnaireId Int           @map("questionnaire_id")
+  choices         Choice[]
+
+  @@schema("questionnaire")
+}
+
+model Choice {
+  id        String   @id @default(uuid()) @db.Uuid
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @map("user_id") @db.Uuid
+  option    Option   @relation(fields: [optionId], references: [id])
+  optionId  String   @map("option_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@schema("questionnaire")
+}
+
+// chat ----------------------------------------------------------------------
+
+model Message {
+  id              Int      @id @default(autoincrement())
+  toUser          User     @relation("to", fields: [toUserId], references: [id])
+  toUserId        String   @map("to_id") @db.Uuid
+  fromUser        User     @relation("from", fields: [fromUserId], references: [id])
+  fromUserId      String   @map("from_id") @db.Uuid
+  room            Room     @relation(fields: [roomId], references: [id])
+  roomId          Int
+  text            String   @db.Text
+  sendAt          DateTime @default(now()) @map("send_at")
+  watched         Boolean
+  voiceMessageUrl String?  @map("voice_message_url")
+  media           Media[]
+
+  @@schema("chat")
+}
+
+model Room {
+  id           Int       @id @default(autoincrement())
+  messages     Message[]
+  participants User[]
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@schema("chat")
+}
+
+// media ----------------------------------------------------------------------
+
+model Media {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  url         String
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String    @map("author_id") @db.Uuid
+  comments    Comment[]
+  message     Message[]
+  post        Post[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@schema("social")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  media     Media?   @relation(fields: [mediaId], references: [id])
+  mediaId   Int?     @map("media_id")
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String   @map("author_id") @db.Uuid
+  post      Post?    @relation(fields: [postId], references: [id])
+  postId    Int?     @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@schema("social")
+}
+
+model Post {
+  id        Int       @id @default(autoincrement())
+  media     Media[]
+  text      String
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  String    @map("author_id") @db.Uuid
+  comments  Comment[]
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@schema("social")
+}
