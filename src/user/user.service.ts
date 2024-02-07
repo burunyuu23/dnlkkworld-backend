@@ -2,7 +2,12 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service.js';
 
 import { KeycloakAdminService } from './keycloak/keycloak-admin.js';
-import { Gender, MaritalStatus, User } from '@prisma/client';
+import {
+  Gender,
+  MaritalStatus,
+  RelationshipStatus,
+  User,
+} from '@prisma/client';
 import _ from 'lodash';
 
 @Injectable()
@@ -12,9 +17,70 @@ export class UserService {
     private readonly prisma: PrismaService,
   ) {}
 
-  getUserById(id: string) {
+  async getUserById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
+      include: {
+        sentRequests: {
+          where: {
+            status: RelationshipStatus.Friends,
+          },
+          take: 6,
+        },
+      },
+    });
+  }
+
+  async sentFriend(
+    fromId: string,
+    toId: string,
+    status: RelationshipStatus,
+    id?: number,
+  ) {
+    return this.prisma.relationship.upsert({
+      where: {
+        id,
+        OR: [
+          { userId1: fromId, userId2: toId },
+          { userId1: toId, userId2: fromId },
+        ],
+      },
+      create: {
+        status,
+        userId1: fromId,
+        userId2: toId,
+      },
+      update: {
+        status,
+      },
+    });
+  }
+
+  async getUserFriendsById(id: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        sentRequests: {
+          where: {
+            status: RelationshipStatus.Friends,
+          },
+          include: {
+            user1: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                secondName: true,
+                gender: true,
+                imageUrl: true,
+                updatedAt: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 

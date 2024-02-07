@@ -1,5 +1,9 @@
 import { env } from 'process';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import KeycloakAdminClient from '@keycloak/keycloak-admin-client';
 
 import { Authenticated } from './keycloak.decorator.js';
@@ -55,10 +59,17 @@ export class KeycloakAdminService {
   }
 
   convertToBaseUser(keycloakUser: KeyCloakUserType): BaseUser {
+    if (!keycloakUser.given_name) {
+      throw new BadRequestException(
+        'У пользователя обязательно должно быть имя!!!',
+      );
+    }
     return {
       id: keycloakUser.sub,
       username: keycloakUser.preferred_username,
       email: keycloakUser.email,
+      firstName: keycloakUser.given_name,
+      secondName: keycloakUser.family_name,
     };
   }
 }

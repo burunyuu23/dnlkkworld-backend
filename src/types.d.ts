@@ -6,6 +6,8 @@ export interface BaseUser {
   id: string;
   username: string;
   email: stirng;
+  firstName: string;
+  secondName?: string;
 }
 
 interface ResourceAccess {

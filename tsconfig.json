@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "target": "esnext",
     "module": "nodenext",
@@ -21,7 +22,13 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@app/common": [
+        "../../libs/common/src"
+      ],
+      "@app/common/*": [
+        "../../libs/common/src/*"
       ]
-    }
+    },
   }
 }

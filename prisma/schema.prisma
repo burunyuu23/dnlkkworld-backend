@@ -29,6 +29,17 @@ enum MaritalStatus {
   @@schema("user")
 }
 
+enum RelationshipStatus {
+  SentByFirst     @map("sent_by_first")
+  SentBySecond    @map("sent_by_second")
+  Friends         @map("friends")
+  BlockedByFirst  @map("blocked_by_first")
+  BlockedBySecond @map("blocked_by_second")
+  BlockedBoth     @map("blocked_both")
+
+  @@schema("user")
+}
+
 model Country {
   id         String @id @default(uuid()) @db.Uuid
   shortValue String @map("short_value") @db.VarChar(2)
@@ -41,6 +52,8 @@ model Country {
 model User {
   id              String          @id @db.Uuid
   username        String
+  firstName       String          @map("first_name")
+  secondName      String?         @map("second_name")
   email           String?
   age             Int?
   imageUrl        String?         @map("image_url")
@@ -54,9 +67,37 @@ model User {
   sendMessages    Message[]       @relation("from")
   receiveMessages Message[]       @relation("to")
   rooms           Room[]
-  media           Media[]
+  media           Media[]         @relation("author")
   comments        Comment[]
   posts           Post[]
+  banner          Media?          @relation("banner", fields: [bannerId], references: [id])
+  avatar          Media?          @relation("avatar", fields: [avatarId], references: [id])
+  bannerId        Int?            @unique @map("banner_id")
+  avatarId        Int?            @unique @map("avatar_id")
+  liked           Media[]         @relation("likes")
+  likedPosts      Post[]          @relation("likedPosts")
+  likedComments   Comment[]       @relation("likedComments")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  sentRequests     Relationship[] @relation("SentRequests")
+  receivedRequests Relationship[] @relation("ReceivedRequests")
+
+  @@schema("user")
+}
+
+model Relationship {
+  id     Int                @id @default(autoincrement())
+  status RelationshipStatus
+
+  user1   User   @relation("SentRequests", fields: [userId1], references: [id])
+  userId1 String @db.Uuid
+
+  user2   User   @relation("ReceivedRequests", fields: [userId2], references: [id])
+  userId2 String @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@schema("user")
 }
@@ -134,12 +175,15 @@ model Media {
   name        String
   description String
   url         String
-  author      User      @relation(fields: [authorId], references: [id])
+  author      User      @relation("author", fields: [authorId], references: [id])
   authorId    String    @map("author_id") @db.Uuid
   comments    Comment[]
   message     Message[]
   post        Post[]
   createdAt   DateTime  @default(now()) @map("created_at")
+  userBanner  User?     @relation("banner")
+  userAvatar  User?     @relation("avatar")
+  likes       User[]    @relation("likes")
 
   @@schema("social")
 }
@@ -153,6 +197,7 @@ model Comment {
   post      Post?    @relation(fields: [postId], references: [id])
   postId    Int?     @map("post_id")
   createdAt DateTime @default(now()) @map("created_at")
+  userLiked User[]   @relation("likedComments")
 
   @@schema("social")
 }
@@ -165,6 +210,7 @@ model Post {
   authorId  String    @map("author_id") @db.Uuid
   comments  Comment[]
   createdAt DateTime  @default(now()) @map("created_at")
+  userLiked User[]    @relation("likedPosts")
 
   @@schema("social")
 }

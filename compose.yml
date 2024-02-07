@@ -44,9 +44,25 @@ services:
     depends_on:
       - postgres_keycloak
 
+  minio1:
+    image: minio/minio
+    command: server /data --console-address ":9090"
+    volumes:
+      - s3:/data
+    ports:
+      - '9000:9000'
+      - '9090:9090'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    networks:
+      - minio_net
+
 
 volumes:
+  s3:
   dnlkkworld:
-    name: dnlkkworld
   keycloak:
-    name: keycloak
+
+networks:
+  minio_net:

@@ -16,6 +16,9 @@ CREATE TYPE "user"."Gender" AS ENUM ('male', 'female');
 -- CreateEnum
 CREATE TYPE "user"."MaritalStatus" AS ENUM ('married', 'divorced', 'was_not_married');
 
+-- CreateEnum
+CREATE TYPE "user"."RelationshipStatus" AS ENUM ('sent_by_first', 'sent_by_second', 'friends', 'blocked_by_first', 'blocked_by_second', 'blocked_both');
+
 -- CreateTable
 CREATE TABLE "user"."Country" (
     "id" UUID NOT NULL,
@@ -35,8 +38,20 @@ CREATE TABLE "user"."User" (
     "gender_t" "user"."Gender",
     "marital_status_t" "user"."MaritalStatus",
     "country" UUID,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user"."Relationship" (
+    "id" SERIAL NOT NULL,
+    "status" "user"."RelationshipStatus" NOT NULL,
+    "userId1" UUID NOT NULL,
+    "userId2" UUID NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Relationship_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -176,6 +191,12 @@ CREATE INDEX "_MediaToPost_B_index" ON "social"."_MediaToPost"("B");
 
 -- AddForeignKey
 ALTER TABLE "user"."User" ADD CONSTRAINT "User_country_fkey" FOREIGN KEY ("country") REFERENCES "user"."Country"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user"."Relationship" ADD CONSTRAINT "Relationship_userId1_fkey" FOREIGN KEY ("userId1") REFERENCES "user"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user"."Relationship" ADD CONSTRAINT "Relationship_userId2_fkey" FOREIGN KEY ("userId2") REFERENCES "user"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "questionnaire"."Questionnaire" ADD CONSTRAINT "Questionnaire_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "user"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
